@@ -1,10 +1,16 @@
 import json
 import sys
 from datetime import datetime, timedelta
+from google.cloud import firestore
 
-from PyQt5.QtCore import QSize, Qt, QTimer
+from PyQt5.QtCore import QSize, Qt, QTimer,QDate
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+
+credentials_path = r'Book My Turf\setup\turfbooking-5303c-firebase-adminsdk-fdnyb-d0bb5961d4.json'
+with open(credentials_path) as json_file:
+    credentials_info = json.load(json_file)
+db = firestore.Client.from_service_account_info(credentials_info)
 
 
 class WelcomePage(QMainWindow):
@@ -36,7 +42,7 @@ class WelcomePage(QMainWindow):
         layout.addWidget(self.image_stack, alignment=Qt.AlignCenter)
 
         # Add images to stacked widget
-        self.add_images_to_stack(["assets/team.jpg", "assets/hr1.jpg", "assets/hr3.jpg","assets/w2.jpg","assets/d9.jpg","assets/b1.jpg"])
+        self.add_images_to_stack(["Book My Turf/assets/team.jpg", "Book My Turf/assets/hr1.jpg", "Book My Turf/assets/hr3.jpg","Book My Turf/assets/w2.jpg","Book My Turf/assets/d9.jpg","Book My Turf/assets/b1.jpg"])
 
         # Get Started button with style
         get_started_button = QPushButton("Get Started")
@@ -154,11 +160,11 @@ class LoginPage(QMainWindow):
         forgot_password_label = QLabel("<center><a href='#' style='color: #333;'>Forgot password?</a></center>")
         sign_in_layout.addWidget(forgot_password_label)
         
-        self.back_button = QPushButton("back")
-        sign_in_layout.addWidget(self.back_button,alignment=Qt.AlignmentFlag.AlignTop)
-        self.back_button.clicked.connect(self.welcome_page.show_login_page)
-        self.back_button.setFixedSize(40,20)
-        self.back_button.setStyleSheet("background-color:skyblue")
+        # self.back_button = QPushButton("back")
+        # sign_in_layout.addWidget(self.back_button,alignment=Qt.AlignmentFlag.AlignTop)
+        # self.back_button.clicked.connect(self.welcome_page.show_login_page)
+        # self.back_button.setFixedSize(40,20)
+        # self.back_button.setStyleSheet("background-color:skyblue")
 
     def setup_signup_page(self):
         # Create the sign-up card widget
@@ -197,19 +203,21 @@ class LoginPage(QMainWindow):
 
         signin_button = QPushButton("Sign In")
         signin_button.setStyleSheet("background-color: #f44336; color: white; border: none; padding: 10px;")
-        signin_button.clicked.connect(self.welcome_page.show_login_page)  # Use the reference to WelcomePage
+        # signin_button.clicked.connect(self.welcome_page.show_login_page)  # Use the reference to WelcomePage
         signup_layout.addWidget(signin_button)
         
-        self.back_button = QPushButton("back")
-        signup_layout.addWidget(self.back_button,alignment=Qt.AlignmentFlag.AlignTop)
-        self.back_button.clicked.connect(self.welcome_page.show_login_page)
-        self.back_button.setFixedSize(80,20)
-        self.back_button.setStyleSheet("background-color:orange")
+        # self.back_button = QPushButton("back")
+        # signup_layout.addWidget(self.back_button,alignment=Qt.AlignmentFlag.AlignTop)
+        # self.back_button.clicked.connect(self.welcome_page.show_login_page)
+        # self.back_button.setFixedSize(80,20)
+        # self.back_button.setStyleSheet("background-color:orange")
 
     def show_signup_page(self):
         self.stacked_widget.setCurrentWidget(self.signup_widget)
 
     def save_signup_data(self):
+        # Get a reference to the Firestore collection
+        user_profiles_ref = db.collection('signup_data').document()
         signup_data = {
             "username": self.signup_username_input.text(),
             "email": self.signup_email_input.text(),
@@ -217,8 +225,13 @@ class LoginPage(QMainWindow):
         }
         with open("signup_data.json", "a") as file:
             json.dump(signup_data, file)
-            file.write("\n")  # Add a new line for each entry
+            file.write("\n")  # Add a new line for each entry        
 
+         # Add the user profile to Firestore
+        #new_user_ref = user_profiles_ref.add(signup_data)
+        user_profiles_ref.set(signup_data)
+        print("document id ",user_profiles_ref.id)
+        
         self.welcome_page.show_login_page()  # Use the reference to WelcomePage
 
     def check_login(self):
@@ -248,22 +261,29 @@ class GameSelectionPage(QWidget):
         self.setWindowTitle("Game Selection")
         self.parent = parent
         self.username = username
-
+        # self.game_layout = QVBoxLayout()
+        # self.setLayout(self.game_layout)
         layout = QGridLayout(self)
         layout.setContentsMargins(200, 100, 200, 100)
         
         # Add heading
-        choose_game_label = QLabel("<h1>Choose the Game</h1>")
+        choose_game_label = QLabel("<h1>Choose the Game</h1>",font=QFont("Calibri",20))
         layout.addWidget(choose_game_label, 0, 0, 1, 3, Qt.AlignCenter)  # Span 1 row, 3 columns
+        
+        self.back_button = QPushButton("Log out")
+        layout.addWidget(self.back_button, 11, 5, 0, 0,)
+        self.back_button.clicked.connect(self.show_logout_page)
+        self.back_button.setFixedSize(80,20)
+        self.back_button.setStyleSheet("background-color:skyblue")
 
         # Dictionary containing game names and corresponding image paths
         games = {
-            "Cricket": "assets/cricket.jpg",
-            "Football": "assets/football.jpg",
-            "Tennis": "assets/tennis.jpg",
-            "Basketball": "assets/basketball.jpg",
-            "Golf": "assets/golf.jpg",
-            "Baseball": "assets/baseball.jpg"
+            "Cricket": "Book My Turf/assets/cricket.jpg",
+            "Football": "Book My Turf/assets/football.jpg",
+            "Tennis": "Book My Turf/assets/tennis.jpg",
+            "Basketball": "Book My Turf/assets/basketball.jpg",
+            "Golf": "Book My Turf/assets/golf.jpg",
+            "Baseball": "Book My Turf/assets/baseball.jpg"
         }
 
         # Iterate over games and add buttons with images and game names
@@ -294,11 +314,17 @@ class GameSelectionPage(QWidget):
             if col > 2:
                 col = 0
                 row += 2
-
+        
     def select_game_slot(self, game):
         game_details_page = GameDetailsPage(self.parent, self.username, game)
         self.parent.stacked_widget.addWidget(game_details_page)
         self.parent.stacked_widget.setCurrentWidget(game_details_page)
+    
+    def show_logout_page(self):
+        game_selection_page = LoginPage(self.parent)
+        self.parent.stacked_widget.addWidget(game_selection_page)
+        self.parent.stacked_widget.setCurrentWidget(game_selection_page)
+        #self.parent.show_login_page()
         
 class GameDetailsPage(QWidget):
     def __init__(self, parent=None, username=None, game=None):
@@ -309,25 +335,46 @@ class GameDetailsPage(QWidget):
         self.game = game
         self.selected_slots = set()  # Set to store selected slots
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(200, 100, 200, 100)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(200, 100, 200, 100)
 
-        title_label = QLabel(f"<center><h1 style='color: #333;'>{game} Slot Details</h1></center>")
-        layout.addWidget(title_label)
-
-        grid_layout = QGridLayout()
-        grid_layout.setSpacing(10)
+        title_label = QLabel(f"<center><h1 style='color: #333;'>{game} Slot Details</h1></center>",font=QFont("Calibri",20))
+        self.layout.addWidget(title_label)
         
-        # self.back_button = QPushButton("Log out")
-        # layout.addWidget(self.back_button,alignment=Qt.AlignmentFlag.AlignTop)
-        # self.back_button.clicked.connect(self.welcome_page.show_Game)
-        # self.back_button.setFixedSize(40,20)
-        # self.back_button.setStyleSheet("background-color:skyblue")
+        self.date_edit = QDateEdit()
+        self.date_edit.setCalendarPopup(True)
+        self.date_edit.setDate(QDate.currentDate())
+        #self.date_edit.setFixedSize(150,30)
+        self.date_edit.setMinimumDate(QDate.currentDate())
+        self.date_edit.dateChanged.connect(self.update_slots)
+        self.layout.addWidget(self.date_edit)
 
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setSpacing(10)
+        self.layout.addLayout(self.grid_layout)
+        
+        book_button = QPushButton("Book Selected Slots")
+        book_button.setStyleSheet("background-color: #4CAF50; color: white; border: none; padding: 10px;font-size: 18px")
+        book_button.clicked.connect(self.book_selected_slots)
+        self.layout.addWidget(book_button, alignment=Qt.AlignCenter)
+
+        # Add button to redirect to game selection page
+        back_button = QPushButton("Back to Game Selection")
+        back_button.setStyleSheet("background-color: #f44336; color: white; border: none; padding: 10px;font-size: 18px")
+        back_button.clicked.connect(self.back_to_game_selection)
+        self.layout.addWidget(back_button, alignment=Qt.AlignCenter)
+        self.update_slots()
+ 
+    def update_slots(self):
+        selected_date = self.date_edit.date().toString(Qt.ISODate)
+        for i in reversed(range(self.grid_layout.count())):
+            widget = self.grid_layout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
         # Define available time slots starting from 6:00 AM to 11:00 PM (24-hour format)
         start_time = 6
         end_time = 23
-        time_slots = [f"{str(hour).zfill(2)}:00" for hour in range(start_time, end_time + 1)]
+        time_slots = [f"{str(hour).zfill(2)}:00 -  {str(hour+1).zfill(2)}:00" for hour in range(start_time, end_time + 1)]
 
         # Read existing bookings from JSON file
         existing_bookings = []
@@ -335,7 +382,7 @@ class GameDetailsPage(QWidget):
             with open("booking_data.json", "r") as file:
                 for line in file:
                     booking = json.loads(line)
-                    if booking["game"] == self.game:
+                    if booking["game"] == self.game and booking["date"] == selected_date:
                         existing_bookings.append(booking)
         except FileNotFoundError:
             pass
@@ -344,7 +391,17 @@ class GameDetailsPage(QWidget):
         for i, time_slot in enumerate(time_slots):
             slot_frame = QFrame()
             slot_frame.setFrameStyle(QFrame.Panel | QFrame.Sunken)
-            slot_frame.setFixedSize(120, 40)  # Set fixed size
+            slot_frame.setFixedSize(150, 50)  # Set fixed size
+            
+            button = QPushButton(time_slot)
+            button.setMinimumSize(100, 100)  # Set minimum size to make them square-shaped
+            if self.is_slot_booked(time_slot, existing_bookings):
+                button.setStyleSheet("background-color: #f44336;")
+                button.clicked.connect(self.slot_booked_msg)
+            else:
+                button.setStyleSheet("background-color: #4CAF50;")
+                button.clicked.connect(lambda _, slot=time_slot: self.book_slot(slot))
+            self.grid_layout.addWidget(button, i // 6, i % 6)
 
             checkbox = QCheckBox(time_slot)
             checkbox.setStyleSheet("margin-left: 5px;")  # Add margin to checkbox text
@@ -353,7 +410,7 @@ class GameDetailsPage(QWidget):
             
             frame_layout = QHBoxLayout(slot_frame)
             frame_layout.addWidget(checkbox, alignment=Qt.AlignCenter)
-            grid_layout.addWidget(slot_frame, i // 6, i % 6)
+            self.grid_layout.addWidget(slot_frame, i // 6, i % 6)
 
             # Set background color based on slot availability
             if checkbox.isChecked():
@@ -362,24 +419,12 @@ class GameDetailsPage(QWidget):
             else:
                 slot_frame.setStyleSheet("background-color: #4CAF50;")  # Green color if available
 
-        layout.addLayout(grid_layout)
-        # Add button to book selected slots
-        book_button = QPushButton("Book Selected Slots")
-        book_button.setStyleSheet("background-color: #4CAF50; color: white; border: none; padding: 10px;")
-        book_button.clicked.connect(self.book_selected_slots)
-        layout.addWidget(book_button, alignment=Qt.AlignCenter)
-
-        # Add button to redirect to game selection page
-        back_button = QPushButton("Back to Game Selection")
-        back_button.setStyleSheet("background-color: #f44336; color: white; border: none; padding: 10px;")
-        back_button.clicked.connect(self.back_to_game_selection)
-        layout.addWidget(back_button, alignment=Qt.AlignCenter)
+                # Add button to book selected slots
+        
 
     def is_slot_booked(self, selected_slot, existing_bookings):
-        current_date = datetime.now().strftime("%Y-%m-%d")
         for booking in existing_bookings:
-            if (booking["date"] == current_date and
-                booking["from"] <= selected_slot < booking["to"]):
+            if (booking["from"] <= selected_slot < booking["to"]):
                 return True
         return False
 
@@ -397,28 +442,76 @@ class GameDetailsPage(QWidget):
                 self.book_slot(slot)
 
     def book_slot(self, selected_slot):
-        current_date = datetime.now().strftime("%Y-%m-%d")
+        selected_date = self.date_edit.date().toString(Qt.ISODate)
+        
+        # Extract start time from selected_slot
+        start_time_str = selected_slot.split(" - ")[0]
+        
         booking_data = {
             "game": self.game,
-            "from": selected_slot,
-            "to": (datetime.strptime(selected_slot, "%H:%M") + timedelta(hours=1)).strftime("%H:%M"),
+            "from": start_time_str,  # Use extracted start time
+            "to": (datetime.strptime(start_time_str, "%H:%M") + timedelta(hours=1)).strftime("%H:%M"),
             "user": self.username,
-            "date": current_date
+            "date": selected_date
         }
-
+    
         # Write the new booking data to the JSON file
         with open("booking_data.json", "a") as file:
             json.dump(booking_data, file)
             file.write("\n")
         QMessageBox.information(self, "Slot Booked", "Slot booked successfully!")
         self.parent.stacked_widget.setCurrentWidget(GameSelectionPage(self.parent, self.username))
-    
+        
+        user_profiles_ref = db.collection('booking_data').document()
+        user_profiles_ref.set(booking_data)
+        
+        existing_bookings = []
+        try:
+            with open("booking_data.json", "r") as file:
+                for line in file:
+                    booking = json.loads(line)
+                    if booking["game"] == self.game and booking["date"] == selected_date:
+                        existing_bookings.append(booking)
+        except FileNotFoundError:
+            pass
 
+        # if self.is_slot_booked(selected_slot, existing_bookings):
+        #      QMessageBox.warning(self, "Slot Already Booked", "Sorry, the selected slot is already booked.")
+        # else:
+            # confirm_dialog = QMessageBox()
+            # confirm_dialog.setIcon(QMessageBox.Question)
+            # confirm_dialog.setWindowTitle("Confirm Slot Booking")
+            # confirm_dialog.setText("Are you sure you want to book this slot?")
+            # confirm_dialog.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+            # confirm_dialog.setDefaultButton(QMessageBox.No)
+            # confirm_dialog_button = confirm_dialog.exec()
+
+            # if confirm_dialog_button == QMessageBox.Yes:
+            #     with open("booking_data.json", "a") as file:
+            #         json.dump(booking_data, file)
+            #         file.write("\n")
+            #     QMessageBox.information(self, "Slot Booked", "Slot booked successfully!")
+            #     self.update_slots()  # Update slots after booking
+
+    
+    
     def back_to_game_selection(self):
         game_selection_page = GameSelectionPage(self.parent, self.username)
         self.parent.stacked_widget.addWidget(game_selection_page)
         self.parent.stacked_widget.setCurrentWidget(game_selection_page)
+ 
+    def slot_booked_msg(self):
+        QMessageBox.warning(self, "Slot Already Booked", "Sorry, the selected slot is already booked.")
+        
+        
+        layout = QVBoxLayout(self)
 
+        back_button = QPushButton("Back to Game Selection")
+        back_button.setStyleSheet("background-color: #f44336; color: white; border: none; padding: 10px;")
+        back_button.clicked.connect(self.back_to_game_selection)
+        layout.addWidget(back_button, alignment=Qt.AlignCenter)
+        
+    
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     welcome_page = WelcomePage()
